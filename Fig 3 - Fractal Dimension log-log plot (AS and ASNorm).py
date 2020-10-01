@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import rc as rcee
 
 def findCurveLength(series,m,k):
     add_terms = (len(series)-m)/k
@@ -38,29 +37,32 @@ def findRSquare(y,y_new):
     rsq = 1 - (sumsqreg/totalsumsq)
     return rsq
 
-plt.style.use('seaborn')
-
 data = pd.read_csv('area_m_1874-2016.csv')
 
 sunspot_areadiff = data['Difference']
 sunspot_totalarea = data['Total']
 AS = []
+ASD = []
 for i in range(len(sunspot_totalarea)):
+    ASD.append(sunspot_areadiff[i])
     if sunspot_totalarea[i] == 0:
         AS.append(0)
     else:
         AS.append(sunspot_areadiff[i]/sunspot_totalarea[i])
 
 AS_avgCLk = []
+ASD_avgCLk = []
 AS_k = []
 
-for i in range(2,33):
-    AS_avgCLk.append(np.log(avgCL(AS,i))/np.log(2))
-    AS_k.append(np.log(i)/np.log(2))
+for i in range(2,55):
+    AS_avgCLk.append(np.log(avgCL(AS,i)))
+    ASD_avgCLk.append(np.log(avgCL(ASD,i)))
+    AS_k.append(np.log(i))
     
 #linear_regression
 coef = np.polyfit(AS_k, AS_avgCLk, 1)
 poly1d_fn = np.poly1d(coef)
+c = coef[1]
 
 D = 10000*coef[0]
 D = D - D%1
@@ -70,17 +72,38 @@ D_error = 10000*(1-RSquared)*abs(D)
 D_error = D_error - D_error%1
 D_error = D_error/10000
 
-plt.plot(AS_k, AS_avgCLk, marker='.', linestyle='None', c=(0,0,0))
-#plt.plot(AS_k, AS_avgCLk, 'yo', AS_k, poly1d_fn(AS_k),'--k')
-plt.plot(AS_k, poly1d_fn(AS_k),'--k', linewidth=0.5, c=(0,0.7,1))
-plt.text(3, 6, 'D = ' + str(abs(D)) + u'\u00B1' + str(D_error))
+coef1 = np.polyfit(AS_k, ASD_avgCLk, 1)
+poly1d_fn1 = np.poly1d(coef1)
+c1 = coef1[1]
+
+D1 = 10000*coef1[0]
+D1 = D1 - D1%1
+D1 = D1/10000
+RSquared1 = findRSquare(ASD_avgCLk,poly1d_fn1(AS_k))
+D1_error = 10000*(1-RSquared1)*abs(D1)
+D1_error = D1_error - D1_error%1
+D1_error = D1_error/10000
+
+#plots
+plt.plot(AS_k, ASD_avgCLk, marker='.', linestyle='None', markersize=4, c=(0,0,1), label=r'${AS}$')
+plt.plot(AS_k, AS_avgCLk, marker='.', linestyle='None', markersize=4, c=(1,0,0), label=r'${AS_{Norm}}$')
+plt.plot([0,5], [c,D*5+c],'--k', linewidth=0.7, c=(1,0,0))
+plt.plot([0,5], [c1,D1*5+c1],'--k', linewidth=0.7, c=(0,0,1))
+
+plt.text(2.5, 0, '$D = $' + str(abs(D)) + u'$\u00B1$' + str(D_error),size=13,rotation=-23)
+plt.text(2.5, 6.7, '$D = $' + str(abs(D1)) + u'$\u00B1$' + str(D1_error),size=13,rotation=-23)
 
 xmin, xmax = plt.xlim()
 ymin, ymax = plt.ylim()
-plt.xlim(0, 5.5)
-plt.ylim(-1, 9)
-plt.title('Hemispherical sunspot asymmetry log-log plot (1874-2016)')
-plt.xlabel('log2(k)')
-plt.ylabel('log2(<L(k)>)')
+plt.xlim(0, 4.5)
+plt.ylim(-2, 15)
+plt.xlabel(r'${log(\tau)}$',fontsize=13)
+plt.ylabel(r'${log\langle{L(\tau)}\rangle}$',fontsize=13)
+
+#legend
+leg = plt.legend()
+plt.legend(loc='upper right',fontsize=16,shadow=True)
+plt.tight_layout()
 
 plt.show()
+
